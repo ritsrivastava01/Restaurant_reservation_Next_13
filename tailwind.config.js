@@ -3,6 +3,9 @@ module.exports = {
   content: ['./app/**/*.{js,jsx,ts,tsx}'],
   theme: {
     extend: {},
+    fontColor: {
+      primary: '#000000'
+    },
     fontSize: {
       '2xsm': '10px',
       xsm: '12px',
