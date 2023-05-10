@@ -1,10 +1,11 @@
 'use client';
-import { useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
 import Modal from '@mui/material/Modal';
 import AuthModalInput from './AuthModalInput';
+import { useAuth } from '../../hooks/useAuth';
+import { AuthenticationContext } from '../context/AuthContext';
+import { Alert, CircularProgress } from '@mui/material';
 
 const style = {
   position: 'absolute' as 'absolute',
@@ -18,9 +19,13 @@ const style = {
 };
 
 export default function AuthModal({ isSignIn }: { isSignIn: boolean }) {
-  const [open, setOpen] = useState(true);
+  const { loading, data, errors } = useContext(AuthenticationContext);
+
+  const [open, setOpen] = useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
+  const [disabled, setDisabled] = useState(true);
+  const { signIn, signUp } = useAuth();
   const [inputs, setInputs] = useState({
     firstName: '',
     lastName: '',
@@ -36,16 +41,53 @@ export default function AuthModal({ isSignIn }: { isSignIn: boolean }) {
       [e.target.name]: e.target.value
     });
   };
+  useEffect(() => {
+    if (isSignIn) {
+      if (inputs.email && inputs.password) {
+        setDisabled(false);
+      } else {
+        setDisabled(true);
+      }
+    } else if (
+      inputs.firstName &&
+      inputs.lastName &&
+      inputs.email &&
+      inputs.city &&
+      inputs.phoneNumber &&
+      inputs.password
+    ) {
+      setDisabled(false);
+    } else {
+      setDisabled(true);
+    }
+  }, [inputs]);
 
   const renderContent = (signInContent: string, singUpContent: String) => {
     return isSignIn ? signInContent : singUpContent;
+  };
+  const handleClick = async () => {
+    {
+      if (isSignIn) {
+        signIn(inputs.email, inputs.password, handleClose);
+      } else {
+        signUp(
+          inputs.firstName,
+          inputs.lastName,
+          inputs.email,
+          inputs.city,
+          inputs.phoneNumber,
+          inputs.password,
+          handleClose
+        );
+      }
+    }
   };
 
   return (
     <div>
       <button
         className={`${renderContent(
-          'bg-blue-400 text-white',
+          'bg-blue-400 text-white mr-3',
           ''
         )} border p-1 px-4 rounded mr-3}`}
         onClick={handleOpen}>
@@ -57,7 +99,17 @@ export default function AuthModal({ isSignIn }: { isSignIn: boolean }) {
         aria-labelledby='modal-modal-title'
         aria-describedby='modal-modal-description'>
         <Box sx={style}>
-          <div className='p-2'>
+          <div className='p-2 h-[500px]'>
+            {errors ? (
+              <Alert severity='error' className='mb-2'>
+                {errors?.map(
+                  ({ errorMessage }: { errorMessage: string }, index) => (
+                    <li key={index}>{errorMessage}</li>
+                  )
+                )}
+              </Alert>
+            ) : null}
+
             <div className='uppercase font-bold text-center pb-2 mb-2 border-b'>
               <p className='text-sm'>
                 {renderContent('Sign In', 'Create Account')}
@@ -77,7 +129,16 @@ export default function AuthModal({ isSignIn }: { isSignIn: boolean }) {
               isSignIn={isSignIn}
             />
 
-            <button className='uppercase bg-red-600 w-full text-white p-3 rounded text-sm mb-5 disabled:bg-gray-400'>
+            <button
+              className='uppercase bg-red-600 w-full text-white p-3 rounded text-sm mb-5 ml-3
+               disabled:bg-gray-400 flex flex-row text-center justify-center'
+              disabled={disabled || loading}
+              onClick={handleClick}>
+              {loading ? (
+                <CircularProgress
+                  size={'20px'}
+                  className='mr-2'></CircularProgress>
+              ) : null}
               {renderContent('Sign In', 'Create Account')}
             </button>
           </div>
